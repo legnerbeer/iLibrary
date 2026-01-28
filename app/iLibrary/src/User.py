@@ -5,8 +5,9 @@ import json
 from datetime import datetime, date
 from decimal import Decimal
 from .getUserInfoForUser import *
+from .sendMSG import *
 
-class User(getUserInfoForUser):
+class User(getUserInfoForUser, sendMSG):
     """
         A class to manage User on IBMi System
 
@@ -48,8 +49,7 @@ class User(getUserInfoForUser):
                 f"PWD={self.db_password};"
             )
             self.conn = pyodbc.connect(conn_str, autocommit=True)
-            return f'Moin {self.db_user}, this Function is Still in work :)'
-            #return self
+            return self
         except pyodbc.Error as ex:
             sqlstate = ex.args[0]
             print(f"Database connection failed with error: {sqlstate}")

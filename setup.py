@@ -5,7 +5,7 @@ with open("README.md", "r", encoding = "utf-8") as fh:
 
 setup(  # Note: no 'setuptools.' prefix here
     name = "iLibrary",
-    version = "0.0.5",
+    version = "0.0.14",
     author = "jgh1",
     author_email = "iLibrary@legner.beer",
     description = "iLibrary - Tools for IBM i library",
@@ -24,5 +24,10 @@ setup(  # Note: no 'setuptools.' prefix here
     ],
     package_dir = {"": "app"},
     packages = find_packages(where="app"),
-    python_requires = ">=3.6"
+    python_requires = ">=3.6",
+    # install_requires=[
+    #         "requests>=2.25.0",
+    #         "pandas>=1.2.0",
+    #         "pyodbc",  # Often used for IBM i connectivity
+    #     ],
 )

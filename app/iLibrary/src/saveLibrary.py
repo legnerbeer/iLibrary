@@ -6,6 +6,8 @@ import json
 from datetime import datetime, date
 from decimal import Decimal
 from typing import Union
+from pathlib import PureWindowsPath
+
 
 class saveLibrary:
     # ------------------------------------------------------
@@ -13,24 +15,24 @@ class saveLibrary:
     #               IFS
     # ------------------------------------------------------
     def saveLibrary(self,
-                    library:str,
-                    saveFileName:str,
+                    library: str,
+                    saveFileName: str,
                     dev: str = None,
-                    vol:str=None,
-                    toLibrary:str=None,
-                    description:str=None,
-                    localPath:str=None,
-                    remPath:str=None,
-                    getZip:bool=False,
-                    port:int=None,
+                    vol: str = None,
+                    toLibrary: str = None,
+                    description: str = None,
+                    localPath: str = None,
+                    remPath: str = None,
+                    getZip: bool = False,
+                    port: int = None,
                     remSavf=True,
-                    version:str=None,
+                    version: str = None,
                     max_records: Union[int, str, None] = None,
                     asp: Union[int, str, None] = None,
                     waitFile: Union[int, str, None] = None,
                     share: str = None,
                     authority: str = None
-                ) -> bool:
+                    ) -> bool:
         """
             Saves a complete library from the IBM i to a save file.
 
@@ -62,23 +64,23 @@ class saveLibrary:
                       False otherwise.
         """
         # Target Release List
-        trgList:list = ["V1R1M0", "V1R1M2", "V1R2M0", "V1R3M0", "V2R1M0", "V2R1M1",
-                        "V2R2M0", "V2R3M0", "V3R0M5", "V3R1M0", "V3R2M0", "V3R6M0",
-                        "V3R7M0", "V4R1M0", "V4R2M0", "V4R3M0", "V4R4M0", "V4R5M0",
-                        "V5R1M0", "V5R2M0", "V5R3M0", "V5R4M0", "V6R1M0", "V6R1M1",
-                        "V7R1M0", "V7R2M0", "V7R3M0", "V7R4M0", "V7R5M0", "V7R6M0"]
+        trgList: list = ["V1R1M0", "V1R1M2", "V1R2M0", "V1R3M0", "V2R1M0", "V2R1M1",
+                         "V2R2M0", "V2R3M0", "V3R0M5", "V3R1M0", "V3R2M0", "V3R6M0",
+                         "V3R7M0", "V4R1M0", "V4R2M0", "V4R3M0", "V4R4M0", "V4R5M0",
+                         "V5R1M0", "V5R2M0", "V5R3M0", "V5R4M0", "V6R1M0", "V6R1M1",
+                         "V7R1M0", "V7R2M0", "V7R3M0", "V7R4M0", "V7R5M0", "V7R6M0"]
 
         # check if something missing from the Arguments
-        #check if Library is empty or not
+        # check if Library is empty or not
         if not library:
             raise ValueError("A library name is required.")
         # check if saveFileName is empty or not
         if not saveFileName:
             raise ValueError("A save file name is required.")
-        #check if toLibrary is empty or not
+        # check if toLibrary is empty or not
         if not toLibrary:
             toLibrary = library
-        #check if user want the SaveFile as ZIP File
+        # check if user want the SaveFile as ZIP File
         if getZip:
             if not remPath:
                 raise ValueError("A remote path is required. Use 'remPath' instead.")
@@ -88,32 +90,36 @@ class saveLibrary:
                 raise ValueError("A local path is required. Use 'localPath' instead.")
             elif localPath[-1] == '/':
                 localPath = localPath[:-1]
-        #check wich Version of SaveFile is wanted
+        # check wich Version of SaveFile is wanted
         if not version in list(trgList):
             version = "*CURRENT"
         else:
             version = version.upper()
-        command_str:str = f'SAVLIB'
+        command_str: str = f'SAVLIB'
 
-        #check if Library is valid or not
-        validated_library =  self.__validate_max_value(value=library, param_name='library', str_format=['*NONSYS', '*ALLUSR', '*IBM', '*SELECT', '*USRSPC', library])
+        # check if Library is valid or not
+        validated_library = self.__validate_max_value(value=library, param_name='library',
+                                                      str_format=['*NONSYS', '*ALLUSR', '*IBM', '*SELECT', '*USRSPC',
+                                                                  library])
         if validated_library:
             command_str += f' LIB({validated_library})'
         else:
             library_str = str(library)
-            raise ValueError(f"The library '{library_str}' is not valid. Must be one of the specified strings or a valid number.")
-        #check Dev - Device
+            raise ValueError(
+                f"The library '{library_str}' is not valid. Must be one of the specified strings or a valid number.")
+        # check Dev - Device
         if not dev in ['*SAVF', '*MEDDFN']:
             command_str += f' DEV(*SAVF)'
         else:
             command_str += f' DEV({dev.upper()})'
         if vol is not None and vol == '*MOUNTED':
             command_str += f' VOL({vol})'
-        #starting with mem main Sourcecode of saveLLibrary
-        if self.__crtsavf(saveFileName, toLibrary, description, max_records=max_records, asp=asp, waitFile=waitFile, share=share, authority=authority):
-            #command_str: str = f"SAVLIB LIB({library.strip()}) DEV(*SAVF) SAVF({toLibrary.strip()}/{saveFileName.strip()}) TGTRLS({version.strip()})"
+        # starting with mem main Sourcecode of saveLLibrary
+        if self.__crtsavf(saveFileName, toLibrary, description, max_records=max_records, asp=asp, waitFile=waitFile,
+                          share=share, authority=authority):
+            # command_str: str = f"SAVLIB LIB({library.strip()}) DEV(*SAVF) SAVF({toLibrary.strip()}/{saveFileName.strip()}) TGTRLS({version.strip()})"
             command_str += f" SAVF({toLibrary.strip()}/{saveFileName.strip()}) TGTRLS({version.strip()})"
-            print(command_str)
+            #print(command_str)
             try:
                 with self.conn.cursor() as cursor:
                     # execute the Command for creating a Savefile.
@@ -131,8 +137,8 @@ class saveLibrary:
                             # Execute the command on the remote system
                             cursor.execute("CALL QSYS2.QCMDEXC(?)", (command_str,))
 
-                            if  self.__getSavFile(localFilePath=destination_local_path,
-                                                     remotePath=remote_temp_savf_path, port=port):
+                            if self.__getSavFile(localFilePath=destination_local_path,
+                                                 remotePath=remote_temp_savf_path, port=port):
                                 rmvCommand = f"QSH CMD('rm -r {remote_temp_savf_path}')"
                                 cursor.execute("CALL QSYS2.QCMDEXC(?)", (rmvCommand))
                             else:
@@ -163,15 +169,15 @@ class saveLibrary:
     # sub Function: create the Savefile on the AS400
     # ------------------------------------------------------
     def __crtsavf(self,
-                  saveFileName:str,
-                  library:str,
-                  description:str=None,
+                  saveFileName: str,
+                  library: str,
+                  description: str = None,
                   max_records: Union[int, str, None] = None,
                   asp: Union[int, str, None] = None,
                   waitFile: Union[int, str, None] = None,
-                  share:str=None,
-                  authority:str=None
-                ) -> bool:
+                  share: str = None,
+                  authority: str = None
+                  ) -> bool:
         """
             Sub-function to create a save file on the IBM i server.
 
@@ -199,13 +205,15 @@ class saveLibrary:
 
         command_str: str = f"CRTSAVF FILE({library.upper().strip()}/{saveFileName.upper().strip()}) TEXT('{description.strip()}')"
 
-        #check max_records for MAXRCDS parameter
-        if self.__validate_max_value(value=max_records, param_name='max_records', str_format=['*NOMAX'], max_limit=4293525600) and not None:
+        # check max_records for MAXRCDS parameter
+        if self.__validate_max_value(value=max_records, param_name='max_records', str_format=['*NOMAX'],
+                                     max_limit=4293525600) and not None:
             command_str += f" MAXRCDS({max_records})"
-        #check asp for ASP 2147483647
+        # check asp for ASP 2147483647
         if self.__validate_max_value(value=asp, param_name='asp', str_format=['*LIBASP'], max_limit=32) and not None:
             command_str += f" ASP({asp})"
-        if self.__validate_max_value(value=waitFile,param_name='waitFile', str_format=['*IMMED', '*CLS'], max_limit=2147483647) and not None:
+        if self.__validate_max_value(value=waitFile, param_name='waitFile', str_format=['*IMMED', '*CLS'],
+                                     max_limit=2147483647) and not None:
             command_str += f" WAITFILE({waitFile})"
         if self.__validate_max_value(value=share, param_name='share', str_format=['*YES', '*NO']) and not None:
             command_str += f" SHARE({share})"
@@ -224,15 +232,15 @@ class saveLibrary:
             elif upper_authority in ['*EXCLUDE', '*ALL', '*CHANGE', '*LIBCRTAUT', '*USE']:
                 command_str += f" AUT({upper_authority})"
 
-        print (command_str)
+
         try:
             with self.conn.cursor() as cursor:
-                #execute the Command for creating a Savefile.
+                # execute the Command for creating a Savefile.
                 cursor.execute("CALL QSYS2.QCMDEXC(?)", (command_str))
 
         except Exception as e:
             self.__handle_error(error=e, pgm="__crtsavf")
-            #remove a SAVF if its exists and we got an error
+            # remove a SAVF if its exists and we got an error
             if e.args[0] == 'HY000':
                 sql = """
                       SELECT 1
@@ -247,7 +255,7 @@ class saveLibrary:
                 if result is not None:
                     self.removeFile(library=library, saveFileName=saveFileName)
             self.conn.rollback()
-            return False
+            raise ValueError(e)
         else:
             self.conn.commit()
             return True
@@ -307,14 +315,15 @@ class saveLibrary:
                 f"Invalid numeric value for {param_name}. Must be between {min_limit} and {max_limit:,}. "
                 f"Received: {numeric_value}"
             )
+
     # ------------------------------------------------------
     # getZipFile - getting the Zipfile from the SaveFile
     # ------------------------------------------------------
     def __getSavFile(self,
                      localFilePath: str,
                      remotePath: str,
-                     port:int=None
-                    ) -> bool:
+                     port: int = None
+                     ) -> bool:
         """
             Downloads a file from the remote IBM i via SFTP.
 
@@ -342,6 +351,8 @@ class saveLibrary:
             return False
         if not port:
             port = 2222
+
+        remotePath = PureWindowsPath(remotePath).as_posix()
         ssh_client = paramiko.SSHClient()
 
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -371,7 +382,7 @@ class saveLibrary:
         finally:
             pass
 
-    def removeFile(self, library:str, saveFileName:str) -> bool:
+    def removeFile(self, library: str, saveFileName: str) -> bool:
         """
         Remove a (saved) file from the library on the AS400.
         :param library: The name of the library where the save file will be created.
@@ -393,8 +404,7 @@ class saveLibrary:
             self.conn.commit()
             return True
 
-
-    def __handle_error(self, error, pgm:str):
+    def __handle_error(self, error, pgm: str):
         """
             Handle ODBC Errors and foramt them
         :param error:

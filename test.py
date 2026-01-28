@@ -1,8 +1,8 @@
 from os.path import join, dirname
 import os
 from dotenv import load_dotenv
-import iLibrary
-
+from iLibrary import Library, User
+from pathlib import Path
 #load ENV file and get the Connection Settings
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -17,23 +17,13 @@ DB_CREDENTIALS = {
     "db_driver": DB_DRIVER
 }
 
+ok = 'Backup Completed Successfully'
 
 if __name__ == "__main__":
+    from os.path import dirname
     try:
-        with iLibrary.Library(**DB_CREDENTIALS) as lib:
-            # Backup a library and download the save file
-            was_saved = lib.saveLibrary(
-                library='YOURPRODLIB',
-                saveFileName='PRODLIBSAV',
-                getZip=True,
-                localPath=f'{os.getcwd()}/backups',
-                remPath='/home/<YOUR USERNAME>/',
-                remSavf=True
-            )
-
-            if was_saved:
-                print("Backup successful. Cleaning up remote file.")
-                lib.removeFile(library='PRODLIB', saveFileName='PRODLIBSAV')
-
-    except ValueError as e:
-        print(f"Invalid parameter specified: {e}")
+        with User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER) as us:
+            data = us.send_message_to_user(username="ALEER", message="Hello From PyCharm")
+            print(data)
+    except Exception as e:
+        print(f"An error occurred: {e}")

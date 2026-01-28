@@ -4,9 +4,19 @@ import pyodbc
 import json
 from datetime import datetime, date
 from decimal import Decimal
+
 class getInfoForLibrary:
     """
-    A class to show libraries and files on an IBM i system.
+    Class responsible for retrieving detailed information about libraries and files
+    through SQL queries. The class includes mechanisms for obtaining formatted
+    results either in JSON or as native Python objects.
+
+    The purpose is to interface with a database system to fetch metadata related
+    to libraries or library objects, ensuring the results are presented in an
+    easily consumable format.
+
+    :ivar conn: Database connection instance used for executing SQL queries.
+    :type conn: object
     """
     # ------------------------------------------------------
     # getInfoForLibrary - get all Infos over SQL about
@@ -88,167 +98,201 @@ class getInfoForLibrary:
     # ------------------------------------------------------
     # getFileInfo - get all Files and Infos from a Lib
     # ------------------------------------------------------
-    def getFileInfo(self, library:str, qFiles:bool=False) -> str:
+    def getFileInfo(self, library: str, qFiles: bool = False) -> str:
         """
         getFileInfo - get all Files and Infos from a Lib
-        :param library: The name of the library where the save file will be created.
-        :param qFiles: If true, get all Files and Infos from Source Physical File
-        :return:
-            str: A Json String with all Files and Infos from a Library
         """
         if not library:
-            raise ValueError("A library name is required.")
+            # Return a JSON string even for errors so json.loads() doesn't crash
+            return json.dumps([{"error": "A library name is required."}])
 
+        try:
+            # ENCODING FIX: Ensure cursor handles data correctly in bundled environment
+            # Some drivers require explicit encoding for metadata calls
+            with self.conn.cursor() as cursor:
+                if not qFiles:
+                    row_title = [
+                        'OBJNAME', 'OBJTYPE', 'OBJOWNER', 'OBJDEFINER', 'OBJCREATED',
+                        'OBJSIZE', 'OBJTEXT', 'OBJLONGNAME', 'LAST_USED_TIMESTAMP',
+                        'LAST_USED_OBJECT', 'DAYS_USED_COUNT', 'LAST_RESET_TIMESTAMP',
+                        'IASP_NUMBER', 'IASP_NAME', 'OBJATTRIBUTE', 'OBJLONGSCHEMA',
+                        'TEXT', 'SQL_OBJECT_TYPE', 'OBJLIB', 'CHANGE_TIMESTAMP',
+                        'USER_CHANGED', 'SOURCE_FILE', 'SOURCE_LIBRARY', 'SOURCE_MEMBER',
+                        'SOURCE_TIMESTAMP', 'CREATED_SYSTEM', 'CREATED_SYSTEM_VERSION',
+                        'LICENSED_PROGRAM', 'LICENSED_PROGRAM_VERSION', 'COMPILER',
+                        'COMPILER_VERSION', 'OBJECT_CONTROL_LEVEL', 'BUILD_ID',
+                        'PTF_NUMBER', 'APAR_ID', 'USER_DEFINED_ATTRIBUTE',
+                        'ALLOW_CHANGE_BY_PROGRAM', 'CHANGED_BY_PROGRAM', 'COMPRESSED',
+                        'PRIMARY_GROUP', 'STORAGE_FREED', 'ASSOCIATED_SPACE_SIZE',
+                        'OPTIMUM_SPACE_ALIGNMENT', 'OVERFLOW_STORAGE', 'OBJECT_DOMAIN',
+                        'OBJECT_AUDIT', 'OBJECT_SIGNED', 'SYSTEM_TRUSTED_SOURCE',
+                        'MULTIPLE_SIGNATURES', 'SAVE_TIMESTAMP', 'RESTORE_TIMESTAMP',
+                        'SAVE_WHILE_ACTIVE_TIMESTAMP', 'SAVE_COMMAND', 'SAVE_DEVICE',
+                        'SAVE_FILE_NAME', 'SAVE_FILE_LIBRARY', 'SAVE_VOLUME', 'SAVE_LABEL',
+                        'SAVE_SEQUENCE_NUMBER', 'LAST_SAVE_SIZE', 'JOURNALED',
+                        'JOURNAL_NAME', 'JOURNAL_LIBRARY', 'JOURNAL_IMAGES',
+                        'OMIT_JOURNAL_ENTRY', 'REMOTE_JOURNAL_FILTER',
+                        'JOURNAL_START_TIMESTAMP', 'APPLY_STARTING_RECEIVER',
+                        'APPLY_STARTING_RECEIVER_LIBRARY', 'AUTHORITY_COLLECTION_VALUE'
+                    ]
+                    cmdString = f"SELECT * FROM TABLE (QSYS2.OBJECT_STATISTICS('{library.upper()}','*ALL') ) AS X"
+
+                else:
+                    cmdString = f"SELECT * FROM QSYS2.SYSMEMBERSTAT WHERE SYSTEM_TABLE_SCHEMA = '{library.upper()}' AND SOURCE_TYPE IS NOT NULL ORDER BY SYSTEM_TABLE_MEMBER"
+                    row_title = [
+                        'TABLE_SCHEMA', 'TABLE_NAME', 'SYSTEM_TABLE_SCHEMA', 'SYSTEM_TABLE_NAME',
+                        'SYSTEM_TABLE_MEMBER', 'SOURCE_TYPE', 'LAST_SOURCE_UPDATE_TIMESTAMP',
+                        'TEXT_DESCRIPTION', 'CREATE_TIMESTAMP', 'LAST_CHANGE_TIMESTAMP',
+                        'LAST_SAVE_TIMESTAMP', 'LAST_RESTORE_TIMESTAMP', 'LAST_USED_TIMESTAMP',
+                        'DAYS_USED_COUNT', 'LAST_RESET_TIMESTAMP', 'TABLE_PARTITION',
+                        'PARTITION_TYPE', 'PARTITION_NUMBER', 'NUMBER_DISTRIBUTED_PARTITIONS',
+                        'NUMBER_PARTITIONING_KEYS', 'PARTITIONING_KEYS', 'LOWINCLUSIVE',
+                        'LOWVALUE', 'HIGHINCLUSIVE', 'HIGHVALUE', 'NUMBER_ROWS',
+                        'NUMBER_PAGES', 'OVERFLOW', 'AVGROWSIZE', 'NUMBER_DELETED_ROWS',
+                        'DATA_SIZE', 'VARIABLE_LENGTH_SIZE', 'VARIABLE_LENGTH_SEGMENTS',
+                        'COLUMN_STATS_SIZE', 'MAINTAINED_TEMPORARY_INDEX_SIZE',
+                        'NUMBER_DISTINCT_INDEXES', 'OPEN_OPERATIONS', 'CLOSE_OPERATIONS',
+                        'INSERT_OPERATIONS', 'BLOCKED_INSERT_OPERATIONS', 'BLOCKED_INSERT_ROWS',
+                        'UPDATE_OPERATIONS', 'DELETE_OPERATIONS', 'CLEAR_OPERATIONS',
+                        'COPY_OPERATIONS', 'REORGANIZE_OPERATIONS', 'INDEX_BUILDS',
+                        'LOGICAL_READS', 'PHYSICAL_READS', 'SEQUENTIAL_READS',
+                        'RANDOM_READS', 'NEXT_IDENTITY_VALUE', 'KEEP_IN_MEMORY',
+                        'MEDIA_PREFERENCE', 'VOLATILE', 'PARTIAL_TRANSACTION',
+                        'APPLY_STARTING_RECEIVER_LIBRARY', 'APPLY_STARTING_RECEIVER'
+                    ]
+
+                cursor.execute(cmdString)
+                rows = cursor.fetchall()
+
+                if not rows:
+                    return json.dumps([{"error": f'No Files Found in Library: {library}'}])
+
+                result_list = []
+                for row in rows:
+                    # Use a dict comprehension with string cleaning for macOS safety
+                    row_dict = {}
+                    for i, value in enumerate(row):
+                        key = row_title[i] if i < len(row_title) else f"UNKNOWN_{i}"
+
+                        # Handle Data Types for JSON Serialization
+                        if isinstance(value, (datetime, date)):
+                            row_dict[key] = value.isoformat()
+                        elif isinstance(value, Decimal):
+                            row_dict[key] = float(value)
+                        elif value is None:
+                            row_dict[key] = None
+                        elif isinstance(value, bytes):
+                            # Packaged apps often return bytes for strings
+                            row_dict[key] = value.decode('utf-8', errors='replace')
+                        else:
+                            row_dict[key] = str(value).strip()
+
+                    result_list.append(row_dict)
+
+                self.conn.commit()
+                return json.dumps(result_list, indent=4)
+
+        except Exception as e:
+            if self.conn:
+                self.conn.rollback()
+            # CRITICAL: Always return a JSON-encoded error string
+            return json.dumps([{"error": f"Database Error: {str(e)}"}])
+
+
+
+
+    def getAllLibraries(self):
+        """
+                getFileInfo - get all Files and Infos from a Lib
+                :param library: The name of the library where the save file will be created.
+                :param qFiles: If true, get all Files and Infos from Source Physical File
+                :return:
+                    str: A Json String with all Files and Infos from a Library
+                """
 
         try:
             with self.conn.cursor() as cursor:
                 # execute the Command for deleting a Savefile.
-                if not qFiles:
-                    row_title = [
-                        'OBJNAME',
-                        'OBJTYPE',
-                        'OBJOWNER',
-                        'OBJDEFINER',
-                        'OBJCREATED',
-                        'OBJSIZE',
-                        'OBJTEXT',
-                        'OBJLONGNAME',
-                        'LAST_USED_TIMESTAMP',
-                        'LAST_USED_OBJECT',
-                        'DAYS_USED_COUNT',
-                        'LAST_RESET_TIMESTAMP',
-                        'IASP_NUMBER',
-                        'IASP_NAME',
-                        'OBJATTRIBUTE',
-                        'OBJLONGSCHEMA',
-                        'TEXT',
-                        'SQL_OBJECT_TYPE',
-                        'OBJLIB',
-                        'CHANGE_TIMESTAMP',
-                        'USER_CHANGED',
-                        'SOURCE_FILE',
-                        'SOURCE_LIBRARY',
-                        'SOURCE_MEMBER',
-                        'SOURCE_TIMESTAMP',
-                        'CREATED_SYSTEM',
-                        'CREATED_SYSTEM_VERSION',
-                        'LICENSED_PROGRAM',
-                        'LICENSED_PROGRAM_VERSION',
-                        'COMPILER',
-                        'COMPILER_VERSION',
-                        'OBJECT_CONTROL_LEVEL',
-                        'BUILD_ID',
-                        'PTF_NUMBER',
-                        'APAR_ID',
-                        'USER_DEFINED_ATTRIBUTE',
-                        'ALLOW_CHANGE_BY_PROGRAM',
-                        'CHANGED_BY_PROGRAM',
-                        'COMPRESSED',
-                        'PRIMARY_GROUP',
-                        'STORAGE_FREED',
-                        'ASSOCIATED_SPACE_SIZE',
-                        'OPTIMUM_SPACE_ALIGNMENT',
-                        'OVERFLOW_STORAGE',
-                        'OBJECT_DOMAIN',
-                        'OBJECT_AUDIT',
-                        'OBJECT_SIGNED',
-                        'SYSTEM_TRUSTED_SOURCE',
-                        'MULTIPLE_SIGNATURES',
-                        'SAVE_TIMESTAMP',
-                        'RESTORE_TIMESTAMP',
-                        'SAVE_WHILE_ACTIVE_TIMESTAMP',
-                        'SAVE_COMMAND',
-                        'SAVE_DEVICE',
-                        'SAVE_FILE_NAME',
-                        'SAVE_FILE_LIBRARY',
-                        'SAVE_VOLUME',
-                        'SAVE_LABEL',
-                        'SAVE_SEQUENCE_NUMBER',
-                        'LAST_SAVE_SIZE',
-                        'JOURNALED',
-                        'JOURNAL_NAME',
-                        'JOURNAL_LIBRARY',
-                        'JOURNAL_IMAGES',
-                        'OMIT_JOURNAL_ENTRY',
-                        'REMOTE_JOURNAL_FILTER',
-                        'JOURNAL_START_TIMESTAMP',
-                        'APPLY_STARTING_RECEIVER',
-                        'APPLY_STARTING_RECEIVER_LIBRARY',
-                        'AUTHORITY_COLLECTION_VALUE'
-                    ]
-                    #generate Normal CMD Command
-                    cmdString = f"SELECT * FROM TABLE (QSYS2.OBJECT_STATISTICS('{library}','*ALL') ) AS X"
-
-                if qFiles:
-                    cmdString = f"SELECT * FROM QSYS2.SYSMEMBERSTAT WHERE SYSTEM_TABLE_SCHEMA = '{library}' AND SOURCE_TYPE IS NOT NULL ORDER BY SYSTEM_TABLE_MEMBER"
-                    row_title = [
-                        'TABLE_SCHEMA',
-                        'TABLE_NAME',
-                        'SYSTEM_TABLE_SCHEMA',
-                        'SYSTEM_TABLE_NAME',
-                        'SYSTEM_TABLE_MEMBER',
-                        'SOURCE_TYPE',
-                        'LAST_SOURCE_UPDATE_TIMESTAMP',
-                        'TEXT_DESCRIPTION',
-                        'CREATE_TIMESTAMP',
-                        'LAST_CHANGE_TIMESTAMP',
-                        'LAST_SAVE_TIMESTAMP',
-                        'LAST_RESTORE_TIMESTAMP',
-                        'LAST_USED_TIMESTAMP',
-                        'DAYS_USED_COUNT',
-                        'LAST_RESET_TIMESTAMP',
-                        'TABLE_PARTITION',
-                        'PARTITION_TYPE',
-                        'PARTITION_NUMBER',
-                        'NUMBER_DISTRIBUTED_PARTITIONS',
-                        'NUMBER_PARTITIONING_KEYS',
-                        'PARTITIONING_KEYS',
-                        'LOWINCLUSIVE',
-                        'LOWVALUE',
-                        'HIGHINCLUSIVE',
-                        'HIGHVALUE',
-                        'NUMBER_ROWS',
-                        'NUMBER_PAGES',
-                        'OVERFLOW',
-                        'AVGROWSIZE',
-                        'NUMBER_DELETED_ROWS',
-                        'DATA_SIZE',
-                        'VARIABLE_LENGTH_SIZE',
-                        'VARIABLE_LENGTH_SEGMENTS',
-                        'COLUMN_STATS_SIZE',
-                        'MAINTAINED_TEMPORARY_INDEX_SIZE',
-                        'NUMBER_DISTINCT_INDEXES',
-                        'OPEN_OPERATIONS',
-                        'CLOSE_OPERATIONS',
-                        'INSERT_OPERATIONS',
-                        'BLOCKED_INSERT_OPERATIONS',
-                        'BLOCKED_INSERT_ROWS',
-                        'UPDATE_OPERATIONS',
-                        'DELETE_OPERATIONS',
-                        'CLEAR_OPERATIONS',
-                        'COPY_OPERATIONS',
-                        'REORGANIZE_OPERATIONS',
-                        'INDEX_BUILDS',
-                        'LOGICAL_READS',
-                        'PHYSICAL_READS',
-                        'SEQUENTIAL_READS'
-                        'RANDOM_READS',
-                        'NEXT_IDENTITY_VALUE',
-                        'KEEP_IN_MEMORY',
-                        'MEDIA_PREFERENCE',
-                        'VOLATILE',
-                        'PARTIAL_TRANSACTION',
-                        'APPLY_STARTING_RECEIVER_LIBRARY',
-                        'APPLY_STARTING_RECEIVER'
-                    ]
-
+                row_title = [
+                    'OBJNAME',
+                    'OBJTYPE',
+                    'OBJOWNER',
+                    'OBJDEFINER',
+                    'OBJCREATED',
+                    'OBJSIZE',
+                    'OBJTEXT',
+                    'OBJLONGNAME',
+                    'LAST_USED_TIMESTAMP',
+                    'LAST_USED_OBJECT',
+                    'DAYS_USED_COUNT',
+                    'LAST_RESET_TIMESTAMP',
+                    'IASP_NUMBER',
+                    'IASP_NAME',
+                    'OBJATTRIBUTE',
+                    'OBJLONGSCHEMA',
+                    'TEXT',
+                    'SQL_OBJECT_TYPE',
+                    'OBJLIB',
+                    'CHANGE_TIMESTAMP',
+                    'USER_CHANGED',
+                    'SOURCE_FILE',
+                    'SOURCE_LIBRARY',
+                    'SOURCE_MEMBER',
+                    'SOURCE_TIMESTAMP',
+                    'CREATED_SYSTEM',
+                    'CREATED_SYSTEM_VERSION',
+                    'LICENSED_PROGRAM',
+                    'LICENSED_PROGRAM_VERSION',
+                    'COMPILER',
+                    'COMPILER_VERSION',
+                    'OBJECT_CONTROL_LEVEL',
+                    'BUILD_ID',
+                    'PTF_NUMBER',
+                    'APAR_ID',
+                    'USER_DEFINED_ATTRIBUTE',
+                    'ALLOW_CHANGE_BY_PROGRAM',
+                    'CHANGED_BY_PROGRAM',
+                    'COMPRESSED',
+                    'PRIMARY_GROUP',
+                    'STORAGE_FREED',
+                    'ASSOCIATED_SPACE_SIZE',
+                    'OPTIMUM_SPACE_ALIGNMENT',
+                    'OVERFLOW_STORAGE',
+                    'OBJECT_DOMAIN',
+                    'OBJECT_AUDIT',
+                    'OBJECT_SIGNED',
+                    'SYSTEM_TRUSTED_SOURCE',
+                    'MULTIPLE_SIGNATURES',
+                    'SAVE_TIMESTAMP',
+                    'RESTORE_TIMESTAMP',
+                    'SAVE_WHILE_ACTIVE_TIMESTAMP',
+                    'SAVE_COMMAND',
+                    'SAVE_DEVICE',
+                    'SAVE_FILE_NAME',
+                    'SAVE_FILE_LIBRARY',
+                    'SAVE_VOLUME',
+                    'SAVE_LABEL',
+                    'SAVE_SEQUENCE_NUMBER',
+                    'LAST_SAVE_SIZE',
+                    'JOURNALED',
+                    'JOURNAL_NAME',
+                    'JOURNAL_LIBRARY',
+                    'JOURNAL_IMAGES',
+                    'OMIT_JOURNAL_ENTRY',
+                    'REMOTE_JOURNAL_FILTER',
+                    'JOURNAL_START_TIMESTAMP',
+                    'APPLY_STARTING_RECEIVER',
+                    'APPLY_STARTING_RECEIVER_LIBRARY',
+                    'AUTHORITY_COLLECTION_VALUE'
+                ]
+                # generate Normal CMD Command
+                cmdString = f"SELECT * FROM TABLE(QSYS2.OBJECT_STATISTICS('*ALL', '*LIB')) AS X"
                 cursor.execute(cmdString)
-
 
                 result_list = []
                 rows = cursor.fetchall()
                 if len(rows) == 0:
-                    return f'No Files Found in Library: {library}'
+                    return dict(zip("error", f'No Files Found in Library: {library}'))
                 for row in rows:
                     # 1. Create the dictionary for the current row
                     row_dict = dict(zip(row_title, row))
