@@ -30,7 +30,7 @@ jobs:
 
       - name: Build documentation with pdoc
         run: |
-          pdoc -o docs app.iLibrary.src
+          python -m pdoc -o docs app.iLibrary.src
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
