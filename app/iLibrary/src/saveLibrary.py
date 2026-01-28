@@ -10,10 +10,7 @@ from pathlib import PureWindowsPath
 
 
 class saveLibrary:
-    # ------------------------------------------------------
-    # saveLibrary - creating a Savefile and sending to the
-    #               IFS
-    # ------------------------------------------------------
+
     def saveLibrary(self,
                     library: str,
                     saveFileName: str,
@@ -34,34 +31,55 @@ class saveLibrary:
                     authority: str = None
                     ) -> bool:
         """
-            Saves a complete library from the IBM i to a save file.
+        Saves a library to a specified save file, providing options for further customization such
+        as setting the target release, saving as a zip file, specifying the device, volume, and more.
 
-            This method creates a save file on the IBM i and then uses the `SAVLIB`
-            (Save Library) CL command to save the specified library's contents into it.
-            Optionally, it can download the resulting save file to the local machine
-            as a ZIP file.
-
-            Args:
-                library (str): The name of the library to be saved.
-                saveFileName (str): The name of the save file that will be created to hold the library.
-                dev (str, optional): The device type for the save file. Defaults to '*SAVF'.
-                vol (str, optional): The volume to be used for saving the Library. Defaults is None.
-                toLibrary (str, optional): The name of the library to be saved.
-                description (str, optional): A text description for the save file. Defaults to None.
-                localPath (str, optional): The local file path where the downloaded save file will be stored.
-                                           Required if `getZip` is True. Defaults to None.
-                remPath (str, optional): The remote file path on the IBM i's IFS where the
-                                         save file will be temporarily stored before downloading.
-                                         Required if `getZip` is True. Defaults to None.
-                getZip (bool, optional): If True, the save file will be downloaded to the local machine
-                                         and then deleted from the remote IFS. Defaults to False.
-                port (int, optional): The port for the SSH connection. Defaults to 22.
-                remSavf (bool, optional): If True, the save file will be automatacly removed from the remote after downloading.
-                version (str): The version of the save file. Defaults to *CURRENT.
-                max_records (int, str, optional): The maximum number of records to return. Defaults to *NOMAX. (*NOMAX, 1 - 4293525600)
-            Returns:
-                bool: True if the library was saved successfully (and downloaded if requested),
-                      False otherwise.
+        :param library: The name of the library to be saved. Must be a valid library name or one of
+            the predefined options such as '*NONSYS', '*ALLUSR', '*IBM', etc.
+        :type library: str
+        :param saveFileName: The name of the save file where the library will be saved.
+        :type saveFileName: str
+        :param dev: The target device for the save operation. Defaults to '*SAVF' if not provided.
+        :type dev: str, optional
+        :param vol: Specifies the volume to be used. Use ‘*MOUNTED’ to refer to the mounted volume.
+        :type vol: str, optional
+        :param toLibrary: Target library where the save file will be temporarily stored. Defaults
+            to the value of `library` if not specified.
+        :type toLibrary: str, optional
+        :param description: An optional description for the save file to be created.
+        :type description: str, optional
+        :param localPath: The local path where the save file will be downloaded if `getZip` is set
+            to True. Must be an absolute path.
+        :type localPath: str, optional
+        :param remPath: The remote directory path on the target system to temporarily store the
+            save file if `getZip` is set to True. Must be an absolute path.
+        :type remPath: str, optional
+        :param getZip: A flag that determines whether the save file should be archived into a zip
+            file and downloaded locally.
+        :type getZip: bool
+        :param port: Specifies the port to be used for transferring the save file when `getZip` is
+            enabled.
+        :type port: int, optional
+        :param remSavf: A flag indicating whether the save file should be removed from the remote
+            target system after a successful save.
+        :type remSavf: bool
+        :param version: The target release version for the save operation. Valid values include
+            ‘*CURRENT’, or specific OS versions like 'V1R1M0', 'V2R3M0', and so on.
+        :type version: str, optional
+        :param max_records: Optional parameter for specifying the maximum number of records in
+            the save file.
+        :type max_records: Union[int, str, None], optional
+        :param asp: Auxiliary storage pool (ASP) device number or name if applicable.
+        :type asp: Union[int, str, None], optional
+        :param waitFile: The amount of time to wait for file access locks to be released.
+        :type waitFile: Union[int, str, None], optional
+        :param share: Specifies the share handling for threads or users accessing the save file.
+        :type share: str, optional
+        :param authority: Authority option to set for the save file being saved.
+        :type authority: str, optional
+        :return: A boolean indicating whether the library was successfully saved. Returns True on
+            success or False on failure.
+        :rtype: bool
         """
         # Target Release List
         trgList: list = ["V1R1M0", "V1R1M2", "V1R2M0", "V1R3M0", "V2R1M0", "V2R1M1",
@@ -384,11 +402,20 @@ class saveLibrary:
 
     def removeFile(self, library: str, saveFileName: str) -> bool:
         """
-        Remove a (saved) file from the library on the AS400.
-        :param library: The name of the library where the save file will be created.
-        :param saveFileName: The name of the save file to be created.
-        :return:
-        Boolean: True if the file was removed successfully, False otherwise.
+        Removes a save file from the specified library.
+
+        This function executes the system command to delete a save file from an IBM i
+        system. It connects to the database through a cursor, and attempts to perform
+        the operation. If an error is encountered during execution, the function
+        rolls back the transaction and logs the error. On success, the transaction
+        is committed.
+
+        :param library: The name of the library containing the save file to be removed.
+        :type library: str
+        :param saveFileName: The name of the save file to be removed.
+        :type saveFileName: str
+        :return: True if the save file is removed successfully, otherwise False.
+        :rtype: bool
         """
         command_str: str = f"DLTF FILE({library.upper()}/{saveFileName.upper()})"
         try:
@@ -406,10 +433,18 @@ class saveLibrary:
 
     def __handle_error(self, error, pgm: str):
         """
-            Handle ODBC Errors and foramt them
-        :param error:
-        :param pgm:
-        :return:
+        Handles errors encountered during the execution of a command.
+
+        This method processes an error raised during the execution of a command in a
+        specific function and extracts detailed error information including SQLSTATE
+        and the error message. The formatted details are printed to the console for
+        debugging purposes.
+
+        :param error: The error object encountered during command execution.
+        :type error: Exception
+        :param pgm: The name of the function where the error occurred.
+        :type pgm: str
+        :return: None
         """
         print("-------------------------------------------------------------")
         print(f"An error occurred while executing command in function {pgm}:")

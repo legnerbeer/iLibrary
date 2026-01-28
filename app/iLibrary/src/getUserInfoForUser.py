@@ -18,20 +18,18 @@ class getUserInfoForUser():
     """
     def getAllUsers(self, wantJson: bool = False):
         """
-        Fetches all user information from the database.
+        Retrieves all user information from the database. Optionally returns the data in
+        JSON format depending on the provided parameter.
 
-        This function queries the database to retrieve user information and returns the results
-        either as a list of tuples or as a JSON-formatted string, depending on the value
-        of the `wantJson` parameter. If no data is found, an error message is returned instead.
+        Retrieves a list of users stored in the database and can output the data either as
+        a list of tuples or in JSON format. The query fetches all fields available in the
+        user information database table and handles cases where no data is found.
 
-        :param wantJson: Determines the format of the output. If True, the result
-                         will be returned as a JSON-formatted string. If False, the
-                         result will be returned as a list of tuples.
-        :type wantJson: bool
-        :return: The user information retrieved from the database. The format of
-                 the result depends on the value of the `wantJson` parameter. If
-                 no data is found, an error message is returned instead.
-        :rtype: Union[list[tuple], str, None]
+        :param wantJson: Boolean flag to indicate whether the result should be returned
+            in JSON format. If set to False, the result will be a list of tuples. Default
+            is False.
+        :return: The data fetched from the database. When `wantJson` is True, returns a
+            JSON object as a string. Otherwise, returns a list of tuples.
         """
         sql_query = "SELECT * FROM qsys2.user_info"
 
@@ -65,23 +63,18 @@ class getUserInfoForUser():
 
     def getSingleUserInformation(self, username: str, wantJson: bool = False):
         """
-        Retrieve information for a single user based on their username.
+        Retrieves information about a specific user from the database based on their username. The function supports
+        returning data either as a JSON-formatted string or as a tuple with corresponding database fields.
 
-        This function queries the database to fetch information for a specific user,
-        identified by their username. The result can be returned either as a tuple
-        or as a JSON-formatted string depending on the `wantJson` parameter.
-
-        :param username: The username for which the user information needs to be retrieved.
+        :param username: The username of the database user whose information is to be retrieved. Must not be empty.
         :type username: str
-        :param wantJson: Flag indicating whether the result should be returned in JSON format
-            (default is False).
+        :param wantJson: Indicates whether the output should be formatted as JSON. Defaults to False.
         :type wantJson: bool
-        :return: A dictionary representing user information as a JSON-formatted string
-            if `wantJson` is True, or a tuple representing the user's row from the database
-            if `wantJson` is False. Returns None if an error occurs or no user information
-            is found.
-        :rtype: Union[str, tuple, None]
-        :raises ValueError: If the `username` parameter is not provided.
+        :return: A tuple containing database fields if `wantJson` is False, or a JSON-formatted string if `wantJson` is True.
+                 If no user is found, returns either a JSON-formatted error message or a tuple with error details, based on the
+                 value of `wantJson`. Returns None if an exception occurs.
+        :rtype: Union[tuple, str, None]
+        :raises ValueError: If the `username` input is empty or None.
         """
         if not username:
           raise ValueError("A username is required.")
