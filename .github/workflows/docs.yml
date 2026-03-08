@@ -31,7 +31,10 @@ jobs:
 
       - name: Build documentation
         run: |
-          pdoc app.iLibrary.src -o docs
+          # Add your src folder to PYTHONPATH so Python can find the module
+          export PYTHONPATH=$(pwd)/app/iLibrary/src
+          # Use the actual module name inside src
+          pdoc ilibrary -o docs
           touch docs/.nojekyll
 
       - uses: actions/upload-pages-artifact@v4
