@@ -1,15 +1,18 @@
 name: website
 
+# build the documentation whenever there are new commits on main
 on:
   push:
     branches:
       - main
       - Developer
 
+# security: restrict permissions for CI jobs.
 permissions:
   contents: read
 
 jobs:
+  # Build the documentation and upload the static HTML files as an artifact.
   build:
     runs-on: ubuntu-latest
     steps:
@@ -38,6 +41,8 @@ jobs:
         with:
           path: site/
 
+  # Deploy the artifact to GitHub pages.
+  # This is a separate job so that only actions/deploy-pages has the necessary permissions.
   deploy:
     needs: build
     runs-on: ubuntu-latest
