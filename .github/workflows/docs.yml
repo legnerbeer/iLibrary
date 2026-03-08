@@ -2,50 +2,47 @@ name: website
 
 on:
   push:
-    branches:
-      - main
-      - Developer
+    branches: ["main", "master", "Developer"]
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v6
+      # --- STEP 1: RUN YOUR PYTHON SCRIPT ---
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Install dependencies
         run: |
           pip install -e .
-          pip install pdoc mkdocs  # Only installs the core mkdocs
+          pip install pdoc mkdocs
 
       - name: Generate API Reference
         run: python docs/makedoc.py
 
+      # --- STEP 2: LINK TO MKDOCS BUILD ---
       - name: Build Static Website
         run: mkdocs build
 
-      - name: Upload Page Artifact
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: site/
+      # --- STEP 3: LINK TO THE WORKING DEPLOYMENT ---
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
+      - name: Upload Page Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site  # This folder was created by Step 2
+
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
