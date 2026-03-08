@@ -32,6 +32,8 @@ def generate_docs():
     # 3. Optional: Rename for MkDocs if you are using the MkDocs-Material logic
     # for f in out.glob("**/*.html"):
     #     f.rename(f.with_suffix(".md"))
-
+    # Rename .html to .md
+    for f in out.glob("**/*.html"):
+        f.rename(f.with_suffix(".md"))
 if __name__ == "__main__":
     generate_docs()
