@@ -28,10 +28,12 @@ jobs:
 
       - name: Build documentation
         run: |
-          # Doku generieren
+          # 1. Erstelle den Ordner explizit, falls pdoc ihn nicht anlegt
+          mkdir -p docs
+          # 2. Generiere die Doku
           python -m pdoc -o docs app.iLibrary.src
-          # Jekyll komplett deaktivieren, damit der Error verschwindet
-          touch docs/.nojekyll 
+          # 3. Das "Lösch-Signal" für Jekyll: Eine leere Datei namens .nojekyll
+          touch docs/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -41,9 +43,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
