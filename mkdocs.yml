@@ -1,10 +1,8 @@
 site_name: "iLibrary Documentation"
-site_url: https://legnerbeer.github.io/iLibrary/  # <--- MUST HAVE THE TRAILING SLASH
-use_directory_urls: false
+site_url: https://legnerbeer.github.io/iLibrary/
 
 theme:
-  name: material  # You already have this installed via your logs!
-
+  name: mkdocs  # This is the built-in default theme
 
 nav:
   - Home: index.md
@@ -12,4 +10,6 @@ nav:
       - Library: iLibrary/src/Library.md
       - User: iLibrary/src/User.md
       - Save: iLibrary/src/saveLibrary.md
-      # Add the others here following the same pattern
+      - Info (Library): iLibrary/src/getInfoForLibrary.md
+      - Info (User): iLibrary/src/getUserInfoForUser.md
+      - Message: iLibrary/src/sendMSG.md
