@@ -4,8 +4,11 @@ site_url: https://legnerbeer.github.io/iLibrary/
 theme:
   name: material  # You already have this installed via your logs!
 
-# This is the most important part to fix the 404
+
 nav:
   - Home: index.md
   - API Reference:
-      - reference/index.md # This points to the folder your script created
+      - Library: iLibrary/src/Library.md
+      - User: iLibrary/src/User.md
+      - Save: iLibrary/src/saveLibrary.md
+      # Add the others here following the same pattern
