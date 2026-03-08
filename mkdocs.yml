@@ -1,5 +1,6 @@
 site_name: "iLibrary Documentation"
-site_url: https://legnerbeer.github.io/iLibrary/
+site_url: https://legnerbeer.github.io/iLibrary/  # <--- MUST HAVE THE TRAILING SLASH
+use_directory_urls: false
 
 theme:
   name: material  # You already have this installed via your logs!

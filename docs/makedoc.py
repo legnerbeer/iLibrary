@@ -29,9 +29,6 @@ def generate_docs():
     # pdoc will crawl the src_folder and generate HTML by default
     pdoc(src_folder, output_directory=out)
 
-    # 3. Optional: Rename for MkDocs if you are using the MkDocs-Material logic
-    # for f in out.glob("**/*.html"):
-    #     f.rename(f.with_suffix(".md"))
     # Rename .html to .md
     for f in out.glob("**/*.html"):
         f.rename(f.with_suffix(".md"))

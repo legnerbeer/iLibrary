@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -e .
-          pip install pdoc mkdocs-material 
+          pip install pdoc mkdocs
           # Note: mkdocs-material is the standard theme, add any other plugins you use here.
 
       - name: Generate API Reference
