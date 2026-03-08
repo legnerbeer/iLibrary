@@ -24,25 +24,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pdoc
+          pip install pdoc -r requirements.txt
 
-      - name: Build documentation with pdoc
+      - name: Build documentation
         run: |
-          # 1. Dokumentation generieren
-          # Wir nutzen --no-include-undocumented falls nötig, 
-          # aber wichtig ist der Output in 'docs'
+          # Doku generieren
           python -m pdoc -o docs app.iLibrary.src
-          
-          # 2. DER FIX: Erstellt die .nojekyll Datei im Output-Ordner
-          # Dies verhindert, dass GitHub den fehlerhaften Jekyll-Prozess startet
+          # Jekyll komplett deaktivieren, damit der Error verschwindet
           touch docs/.nojekyll 
 
-      - name: Upload Pages artifact
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          # Lädt den Inhalt von docs/ hoch (inklusive der .nojekyll Datei)
           path: docs/
 
   deploy:
