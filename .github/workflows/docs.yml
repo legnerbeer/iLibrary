@@ -32,8 +32,6 @@ jobs:
           mkdir -p docs
           # 2. Generiere die Doku
           python -m pdoc -o docs app.iLibrary.src
-          # 3. Das "Lösch-Signal" für Jekyll: Eine leere Datei namens .nojekyll
-          touch docs/.nojekyll
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
