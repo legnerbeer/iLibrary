@@ -32,7 +32,7 @@ jobs:
       - name: Build documentation
         run: |
           pip install pdoc
-          pdoc ./app/iLibrary/src/ilibrary --output-dir docs --force
+          pdoc ./app/iLibrary/src/ilibrary -o docs 
           touch docs/.nojekyll
 
       - uses: actions/upload-pages-artifact@v4
