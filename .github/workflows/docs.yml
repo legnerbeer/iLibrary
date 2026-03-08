@@ -46,8 +46,8 @@ jobs:
       # -----------------------------
       - name: Build documentation
         run: |
-          mkdir -p docs
-          PYTHONPATH=app/iLibrary/src pdoc ilibrary -o docs
+          pip install pdoc
+          PYTHONPATH=app/iLibrary/src pdoc ilibrary --output-dir docs
           touch docs/.nojekyll
 
       # -----------------------------
