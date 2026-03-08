@@ -1,26 +1,37 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import shutil
-from pdoc import pdoc, render
+from pdoc import pdoc
 
-# 1. Define your paths
-here = Path(__file__).parent
-# Change "api" to whatever folder name you want in MkDocs
-out = here / "docs" / "reference"
-# Change "my_package" to the name of your folder containing .py files
-src_folder = "../app/iLibrary/src"
+# 1. Define paths relative to this script
+# .parent points to the folder containing this script (e.g., your 'docs_scripts' folder)
+script_dir = Path(__file__).parent.resolve()
 
-if out.exists():
-    shutil.rmtree(out)
+# Define the root of your GitHub repo (one level up from the script folder)
+root_path = script_dir.parent
 
-# 2. Configure (Optional)
-# If you don't have a 'pdoc-template' folder, comment this line out
-# render.configure(template_directory=here / "pdoc-template")
+# Path to your source code: root/src
+src_folder = root_path / "app" / "iLibrary" /"src"
 
-# 3. Generate for YOUR project
-# Replace "your_project_name" with your actual package/module name
-pdoc(src_folder, output_directory=out)
+# Path to the output: root/docs/reference
+out = root_path / "docs" / "reference"
 
-# # 4. Rename for MkDocs
-# for f in out.glob("**/*.html"):
-#     f.rename(f.with_suffix(".md"))
+def generate_docs():
+    # Clean up old documentation
+    if out.exists():
+        print(f"Cleaning up old docs at: {out}")
+        shutil.rmtree(out)
+
+    print(f"Generating docs from: {src_folder}")
+    print(f"Outputting to: {out}")
+
+    # 2. Generate for your project
+    # pdoc will crawl the src_folder and generate HTML by default
+    pdoc(src_folder, output_directory=out)
+
+    # 3. Optional: Rename for MkDocs if you are using the MkDocs-Material logic
+    # for f in out.glob("**/*.html"):
+    #     f.rename(f.with_suffix(".md"))
+
+if __name__ == "__main__":
+    generate_docs()
