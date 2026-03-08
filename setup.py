@@ -22,8 +22,8 @@ setup(  # Note: no 'setuptools.' prefix here
         "Development Status :: 4 - Beta",
         "Operating System :: OS Independent",
     ],
-    package_dir = {"": "app"},
-    packages = find_packages(where="app"),
+    package_dir={"": "app/iLibrary/src"},
+    packages=find_packages(where="app/iLibrary/src"),
     python_requires = ">=3.6",
     install_requires=[
             "paramiko",
