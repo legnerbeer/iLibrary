@@ -21,18 +21,15 @@ jobs:
         with:
           python-version: "3.14"
 
-      - name: Install package
+      - name: Install package and dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -e .
 
-      - name: Install documentation tool
-        run: pip install pdoc
-
       - name: Build documentation
         run: |
           pip install pdoc
-          pdoc ./app/iLibrary/src/ilibrary -o docs 
+          pdoc ilibrary -o docs
           touch docs/.nojekyll
 
       - uses: actions/upload-pages-artifact@v4
