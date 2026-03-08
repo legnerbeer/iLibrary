@@ -22,12 +22,12 @@ setup(  # Note: no 'setuptools.' prefix here
         "Development Status :: 4 - Beta",
         "Operating System :: OS Independent",
     ],
-    package_dir = {"": "app"},
-    packages = find_packages(where="app"),
+    package_dir={"": "app/iLibrary/src"},
+    packages=find_packages(where="app/iLibrary/src"),
     python_requires = ">=3.6",
-    # install_requires=[
-    #         "requests>=2.25.0",
-    #         "pandas>=1.2.0",
-    #         "pyodbc",  # Often used for IBM i connectivity
-    #     ],
+    install_requires=[
+            "paramiko",
+            "pyodbc",
+            "python-dotenv",
+        ],
 )
