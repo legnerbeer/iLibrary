@@ -1,8 +1,7 @@
 from os.path import join, dirname
 import os
 from dotenv import load_dotenv
-from iLibrary import Library, User
-from pathlib import Path
+import  iLibrary
 from os.path import dirname
 
 import pyodbc
@@ -26,7 +25,7 @@ print(dirname(__file__))
 if __name__ == "__main__":
     from os.path import dirname
     try:
-        with User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=True) as lib:
+        with iLibrary.User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=True) as lib:
             data = lib.getSingleUserInformation(username='ALBEER')
             print(data)
     except Exception as e:
