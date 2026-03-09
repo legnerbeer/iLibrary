@@ -1,2 +1,2 @@
-from Libr.Library import Library
-from Usr.User import User
+from .Library import Library
+from .User import User

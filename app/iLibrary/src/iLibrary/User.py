@@ -1,7 +1,7 @@
 from mapepire_python import connect
 
-from Usr.getUserInfoForUser import *
-from Usr.sendMSG import *
+from .Usr.getUserInfoForUser import *
+from .Usr.sendMSG import *
 
 class User(getUserInfoForUser, sendMSG):
     """
