@@ -52,7 +52,7 @@ jobs:
         python -m pip install --upgrade pip
         # pyodbc is needed for the IBM i connection
         python -m pip install -r requirements.txt
-        pythom -m pip install -e .
+        python -m pip install -e .
         python -m pip install flake8 pytest # Ensure testing/linting tools are installed
 
     - name: Lint with flake8
