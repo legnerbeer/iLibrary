@@ -3,6 +3,8 @@ import os
 from dotenv import load_dotenv
 from iLibrary import Library, User
 from pathlib import Path
+from os.path import dirname
+
 import pyodbc
 #load ENV file and get the Connection Settings
 dotenv_path = join(dirname(__file__), '.env')
@@ -20,15 +22,12 @@ DB_CREDENTIALS = {
 print(pyodbc.drivers())
 
 ok = 'Backup Completed Successfully'
-
+print(dirname(__file__))
 if __name__ == "__main__":
     from os.path import dirname
     try:
-        with Library(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER) as lb:
-            data = lb.getFileInfo(library='ALBEER1')
-            print(data)
-        with User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER) as lb:
-            data = lb.getAllUsers(wantJson=True)
+        with User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=True) as lib:
+            data = lib.getSingleUserInformation(username='ALBEER')
             print(data)
     except Exception as e:
         print(f"An error occurred: {e}")

@@ -6,6 +6,9 @@ from datetime import datetime, date
 from decimal import Decimal
 
 class getUserInfoForUser():
+    def __init__(self, connection, mapepire=False):
+        self.conn = connection
+        self.mapepire = mapepire
     """
     Handles user information retrieval and messaging functionalities.
 
@@ -42,7 +45,8 @@ class getUserInfoForUser():
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_query)
                 rows = cursor.fetchall()
-
+                if self.mapepire:
+                    return json.dumps(rows['data'], indent=4, default=json_serial)
                 if not rows:
                     error_msg = {'error': 'No data found'}
                     return json.dumps(error_msg, indent=4) if wantJson else [("error", "No data found")]
@@ -91,7 +95,8 @@ class getUserInfoForUser():
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_query)
                 row = cursor.fetchone()  # Since you only expect one user
-
+                if self.mapepire:
+                    return json.dumps(row['data'], indent=4, default=json_serial)
                 if not row:
                     error_msg = {'error': 'No data found for User: ' + username}
                     return json.dumps(error_msg, indent=4) if wantJson else ("error", error_msg['error'])

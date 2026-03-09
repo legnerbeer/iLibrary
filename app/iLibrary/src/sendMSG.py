@@ -15,6 +15,9 @@ class sendMSG():
     Attributes supported by this class are not specified because the class relies
     on method-level operations.
     """
+    def __init__(self, connection, mapepire=False):
+        self.conn = connection
+        self.mapepire = mapepire
     def send_message_to_user(
             self,
             username: str,

@@ -4,8 +4,9 @@ from decimal import Decimal
 
 
 class getInfoForLibrary:
-    def __init__(self, connection):
+    def __init__(self, connection, mapepire=False):
         self.conn = connection
+        self.mapepire = mapepire
 
     def _convert_to_json_ready(self, row, description):
         """Interne Hilfsmethode zur Typ-Konvertierung und Bereinigung."""
@@ -36,16 +37,22 @@ class getInfoForLibrary:
         try:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_query)
-                row = cursor.fetchone()
+                rows = cursor.fetchall()
+                if self.mapepire:
+                    return json.dumps(rows['data'], indent=4)
+                if not rows:
+                    error_msg = {'error': 'No data found'}
+                    return json.dumps(error_msg, indent=4) if wantJson else [("error", "No data found")]
 
-                if not row:
-                    error_msg = {"error": f"No data found for library: {library}"}
-                    return json.dumps(error_msg, indent=4) if wantJson else ("error", error_msg["error"])
+                # Get column names
+                columns = [column[0] for column in cursor.description]
 
                 if wantJson:
-                    return json.dumps(self._convert_to_json_ready(row, cursor.description), indent=4)
+                    # Create a LIST of dictionaries
+                    results = [dict(zip(columns, r)) for r in rows]
+                    return json.dumps(results, indent=4)
 
-                return row
+                return rows
         except Exception as e:
             print(f"Fehler bei getLibraryInfo: {e}")
             return None
@@ -63,7 +70,8 @@ class getInfoForLibrary:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql)
                 rows = cursor.fetchall()
-
+                if self.mapepire:
+                    return json.dumps(rows['data'], indent=4)
                 if not rows:
                     return json.dumps([{"error": f"No Files Found in Library: {library}"}])
 
@@ -75,20 +83,27 @@ class getInfoForLibrary:
             return json.dumps([{"error": f"Database Error: {str(e)}"}])
 
     def getAllLibraries(self):
-        # Hier nutzen wir nun auch die dynamische Spaltenerkennung statt der harten Liste
         sql = "SELECT * FROM TABLE(QSYS2.OBJECT_STATISTICS('*ALL', '*LIB')) AS X"
         try:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql)
                 rows = cursor.fetchall()
+                if self.mapepire:
+                    return json.dumps(rows['data'], indent=4)
+
+                # Robust check for Mapepire/ODBC metadata
+                if cursor.description is None:
+                    return json.dumps([{"error": "Database Error: Metadata (description) is missing"}])
 
                 if not rows:
                     return json.dumps([{"error": "No Libraries found"}])
 
                 result_list = [self._convert_to_json_ready(row, cursor.description) for row in rows]
-                self.conn.commit()
+
+                # Only commit if we aren't using Mapepire (which usually handles this differently)
+                if not self.mapepire:
+                    self.conn.commit()
+
                 return json.dumps(result_list, indent=4)
         except Exception as e:
-            print(f"Fehler bei getAllLibraries: {e}")
-            if self.conn: self.conn.rollback()
-            return False
+            return json.dumps([{"error": f"Database Error: {str(e)}"}])

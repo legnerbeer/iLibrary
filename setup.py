@@ -29,5 +29,6 @@ setup(  # Note: no 'setuptools.' prefix here
             "paramiko",
             "pyodbc",
             "python-dotenv",
+            "mapepire-python"
         ],
 )
