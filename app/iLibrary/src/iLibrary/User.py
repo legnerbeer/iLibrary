@@ -1,14 +1,7 @@
-from os.path import join
-import paramiko
-import pyodbc
-import json
-from datetime import datetime, date
-from decimal import Decimal
-
 from mapepire_python import connect
 
-from .getUserInfoForUser import *
-from .sendMSG import *
+from Usr.getUserInfoForUser import *
+from Usr.sendMSG import *
 
 class User(getUserInfoForUser, sendMSG):
     """

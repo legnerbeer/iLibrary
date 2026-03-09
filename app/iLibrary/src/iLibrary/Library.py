@@ -1,7 +1,7 @@
 from mapepire_python import connect
 import pyodbc
-from .getInfoForLibrary import *
-from .saveLibrary import *
+from Lib.getInfoForLibrary import *
+from Lib.saveLibrary import *
 
 
 

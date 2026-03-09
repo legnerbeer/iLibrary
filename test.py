@@ -1,7 +1,8 @@
+import json
 from os.path import join, dirname
 import os
 from dotenv import load_dotenv
-import  iLibrary
+from iLibrary import Library, User
 from os.path import dirname
 
 import pyodbc
@@ -18,15 +19,12 @@ DB_CREDENTIALS = {
     "db_host": DB_SYSTEM,
     "db_driver": DB_DRIVER
 }
-print(pyodbc.drivers())
 
-ok = 'Backup Completed Successfully'
-print(dirname(__file__))
 if __name__ == "__main__":
     from os.path import dirname
     try:
-        with iLibrary.User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=True) as lib:
-            data = lib.getSingleUserInformation(username='ALBEER')
+        with Library(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=False) as lib:
+            data = lib.getAllLibraries()
             print(data)
     except Exception as e:
         print(f"An error occurred: {e}")
