@@ -1,9 +1,5 @@
-from os.path import join
-import paramiko
-import pyodbc
-import json
-from datetime import datetime, date
-from decimal import Decimal
+from ..util_functions.helper import create_success_envelope, create_error_envelope
+
 
 class sendMSG():
     """
@@ -56,6 +52,15 @@ class sendMSG():
 
         username = username.upper()
         message = message.upper()
+        with self.conn.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as counter FROM QSYS2.USER_INFO WHERE AUTHORIZATION_NAME = ?", (username,))
+            data = cursor.fetchone()
+            if self.mapepire:
+                counter = data['data'][0].get('COUNTER')
+            else:
+                counter = data[0]
+            if counter != 1:
+                return create_error_envelope(error_msg="User not Found", func_name='sendMSG')
 
         sql_query = f"CALL QSYS2.QCMDEXC('SNDMSG MSG(''{message}'') TOUSR({username})')"
         if ccsid:
@@ -63,8 +68,7 @@ class sendMSG():
         try:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_query)
-                row_dict:dict = {"success": f'Message sent to {username}'}
-                return json.dumps(row_dict, indent=4)
+                row_dict= f'Message sent to {username}'
+                return create_success_envelope(row_dict)
         except Exception as e:
-            row_dict: dict = {"error" : f'Error:  {e}'}
-            return json.dumps(row_dict, indent=4)
+            return create_error_envelope(str(e), 'sendMSG')

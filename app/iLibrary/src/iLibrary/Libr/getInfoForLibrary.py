@@ -1,6 +1,5 @@
 from ..util_functions.helper import create_success_envelope, create_error_envelope
-from datetime import datetime, date, timezone
-from decimal import Decimal
+
 
 
 class getInfoForLibrary:
@@ -8,26 +7,6 @@ class getInfoForLibrary:
         self.conn = connection
         self.mapepire = mapepire
 
-    def _convert_to_json_ready(self, row, description):
-        """Interne Hilfsmethode zur Typ-Konvertierung und Bereinigung."""
-        row_dict = {}
-        titles = [col[0] for col in description]
-
-        for i, value in enumerate(row):
-            key = titles[i]
-            # Typ-Prüfung für JSON-Serialisierung
-            if isinstance(value, (datetime, date)):
-                row_dict[key] = value.isoformat()
-            elif isinstance(value, Decimal):
-                row_dict[key] = float(value)
-            elif isinstance(value, bytes):
-                row_dict[key] = value.decode('utf-8', errors='replace')
-            elif value is None:
-                row_dict[key] = None
-            else:
-                # Entfernt unnötige Leerzeichen von CHAR-Feldern
-                row_dict[key] = str(value).strip()
-        return row_dict
 
     def getLibraryInfo(self, library: str):
         if not library or len(library) > 10:
