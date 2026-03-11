@@ -1,10 +1,7 @@
 import paramiko
-import json
-from datetime import datetime, date
-from decimal import Decimal
 from typing import Union
 from pathlib import PureWindowsPath, Path
-from os.path import join
+from ..util_functions.helper import create_success_envelope, create_error_envelope
 
 
 class saveLibrary:
@@ -24,16 +21,15 @@ class saveLibrary:
                     description: str = None,
                     localPath: str = None,
                     remPath: str = None,
-                    getZip: bool = False,
+                    getZip: bool = True,
                     port: int = None,
-                    remSavf=True,
                     version: str = None,
                     max_records: Union[int, str, None] = None,
                     asp: Union[int, str, None] = None,
                     waitFile: Union[int, str, None] = None,
                     share: str = None,
                     authority: str = None
-                    ) -> bool:
+                    ) -> dict[str, str]:
 
         trgList = ["V1R1M0", "V1R1M2", "V1R2M0", "V1R3M0", "V2R1M0", "V2R1M1",
                    "V2R2M0", "V2R3M0", "V3R0M5", "V3R1M0", "V3R2M0", "V3R6M0",
@@ -41,69 +37,85 @@ class saveLibrary:
                    "V5R1M0", "V5R2M0", "V5R3M0", "V5R4M0", "V6R1M0", "V6R1M1",
                    "V7R1M0", "V7R2M0", "V7R3M0", "V7R4M0", "V7R5M0", "V7R6M0"]
 
-        if not library: raise ValueError("A library name is required.")
-        if not saveFileName: raise ValueError("A save file name is required.")
+        if not library:
+            return create_error_envelope(error_msg="Library not found.", func_name='saveLibrary')
+        if not saveFileName:
+            return create_error_envelope(error_msg="A save file name is required.", func_name='saveLibrary')
+        with self.conn.cursor() as cursor:
+            cursor.execute("SELECT COUNT(*) as counter FROM TABLE(QSYS2.LIBRARY_INFO(?))", (library.upper(),))
+            data = cursor.fetchone()
+            if self.mapepire:
+                counter = data['data'][0].get('COUNTER')
+            else:
+                counter = data[0]
+            if counter != 1:
+                return create_error_envelope(error_msg="Library not found.", func_name='saveLibrary')
+            # Standardize inputs
 
         toLibrary = toLibrary if toLibrary else library
-        version = version.upper() if version in trgList else "*CURRENT"
+        version = version.upper() if version and version.upper() in trgList else "*CURRENT"
 
-        # Start building the command
+
+        # Build SAVLIB command
         command_str = f'SAVLIB LIB({library.upper().strip()})'
         command_str += f' DEV({dev.upper() if dev in ["*SAVF", "*MEDDFN"] else "*SAVF"})'
-
         if vol == '*MOUNTED':
             command_str += f' VOL({vol})'
 
-        # 1. Create the SAVF
-        if self.__crtsavf(saveFileName, toLibrary, description, max_records, asp, waitFile, share, authority):
-            command_str += f" SAVF({toLibrary.strip()}/{saveFileName.strip()}) TGTRLS({version.strip()})"
+        try:
+            # 1. Create the SAVF on IBM i
+            if self.__crtsavf(saveFileName, toLibrary, description, max_records, asp, waitFile, share, authority):
+                command_str += f" SAVF({toLibrary.strip()}/{saveFileName.strip()}) TGTRLS({version.strip()})"
 
-            try:
                 with self.conn.cursor() as cursor:
-                    # Execute SAVLIB
+                    # Execute the Save Library command
                     cursor.execute("CALL QSYS2.QCMDEXC(?)", (command_str,))
 
+                    # 2. Handle SFTP Download if requested
                     if getZip:
-                        # Normalize remote IFS path
-                        rem_dir = remPath.rstrip('/')
-                        remote_temp_savf_path = f"{rem_dir}/{saveFileName.upper()}.savf"
-
-                        # Ensure local directory exists
-                        local_dir = Path(localPath)
+                        # Resolve local path logic
+                        local_dir = Path(localPath) if localPath else Path.home() / "Downloads"
                         local_dir.mkdir(parents=True, exist_ok=True)
                         destination_local_path = str(local_dir / f"{saveFileName.upper()}.savf")
 
-                        # Copy from Library to IFS
+                        # Normalize remote IFS path (Ensure remPath is provided if getZip is True)
+                        rem_dir = remPath.rstrip('/') if remPath else '/tmp'
+                        remote_temp_savf_path = f"{rem_dir}/{saveFileName.upper()}.savf"
+
+                        # Copy from Library (*FILE) to IFS (*STMF)
                         copy_cmd = (
                             f"CPYTOSTMF FROMMBR('/QSYS.LIB/{toLibrary.upper().strip()}.LIB/{saveFileName.upper().strip()}.FILE') "
                             f"TOSTMF('{remote_temp_savf_path}') STMFOPT(*REPLACE)"
                         )
                         cursor.execute("CALL QSYS2.QCMDEXC(?)", (copy_cmd,))
 
-                        # 2. Download via SFTP
-
+                        # Perform SFTP transfer
                         if self.__getSavFile(localFilePath=destination_local_path, remotePath=remote_temp_savf_path,
                                              port=port):
-                            print(f"Success: File downloaded to {destination_local_path}")
-                            # Remove temp IFS file
+                            # Clean up the temporary IFS file
                             rmv_ifs_cmd = f"QSH CMD('rm -f {remote_temp_savf_path}')"
                             cursor.execute("CALL QSYS2.QCMDEXC(?)", (rmv_ifs_cmd,))
+                            success_msg = f"Success: Downloaded to {destination_local_path}"
                         else:
-                            print("Error: SFTP transfer failed. Check permissions and paths.")
-                            return False
+                            return create_error_envelope(error_msg="Error: SFTP transfer failed.",
+                                                         func_name='saveLibrary')
 
-                        if remSavf:
-                            self.removeFile(library=toLibrary, saveFileName=saveFileName)
 
-                if not self.mapepire: self.conn.commit()
-                return True
+                    if not self.mapepire:
+                        self.conn.commit()
 
-            except Exception as e:
-                self.__handle_error(error=e, pgm="saveLibrary")
-                if not self.mapepire: self.conn.rollback()
-                return False
+                    return create_success_envelope(data=[], message=success_msg)
 
-        return False
+            else:
+                return create_error_envelope(error_msg="Failed to create Save File (SAVF).", func_name='saveLibrary')
+
+        except Exception as e:
+            if not self.mapepire:
+                self.conn.rollback()
+            return create_error_envelope(error_msg=str(e), func_name='saveLibrary')
+        finally:
+            self.removeFile(library=toLibrary, saveFileName=saveFileName)
+
 
     def __crtsavf(self, saveFileName, library, description, max_records, asp, waitFile, share, authority) -> bool:
         if not description: description = 'A SaveFile from iLibrary'
@@ -138,8 +150,6 @@ class saveLibrary:
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-        def progress(transferred, total):
-            print(f"Transferring: {transferred}/{total} bytes...", end="\r")
 
         try:
             ssh_client.connect(
@@ -157,16 +167,12 @@ class saveLibrary:
                 try:
                     ftp_client.stat(rem_path_posix)
                 except FileNotFoundError:
-                    print(f"\nError: Remote file {rem_path_posix} does not exist on IBM i IFS.")
                     return False
 
-                print(f"Starting download: {rem_path_posix} -> {localFilePath}")
-                ftp_client.get(rem_path_posix, localFilePath, callback=progress)
-                print("\nDownload complete.")
+                ftp_client.get(rem_path_posix, localFilePath)
                 return True
 
         except Exception as e:
-            print(f"\nSFTP Error Details: {str(e)}")
             return False
         finally:
             ssh_client.close()
@@ -190,12 +196,3 @@ class saveLibrary:
             return num
         except:
             return False
-
-    def __handle_error(self, error, pgm: str):
-        print(f"--- Error in {pgm} ---")
-        try:
-            state = error.args[0] if len(error.args) > 0 else "N/A"
-            msg = error.args[1] if len(error.args) > 1 else str(error)
-            print(f"SQLSTATE: {state}\nMessage: {msg}")
-        except:
-            print(f"Details: {str(error)}")
