@@ -1,7 +1,8 @@
+import json
 from os.path import join, dirname
 import os
 from dotenv import load_dotenv
-from iLibrary import Library, User
+from iLibrary import Library, User, IFS
 from os.path import dirname
 
 #load ENV file and get the Connection Settings
@@ -14,12 +15,24 @@ DB_SYSTEM = os.environ.get("DB_SYSTEM")
 
 
 if __name__ == "__main__":
-    from os.path import dirname
     try:
-        with User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=True) as u:
-            # data = u.getSingleUserInformation(username=f"{DB_USER}")
-            # print(data)
-            data = u.send_message_to_user(f"{DB_USER}", 'Test with JSON')
-            print(data)
+        #try to get a connection to the Servcer
+        with IFS(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=False) as i:
+
+            path = '/home/ALBEER/'
+            raw_result = i.readIFS(path_to_read=path, subtrees=False)
+            data = json.loads(raw_result)
+            print(json.dumps(data, indent=2))
     except Exception as e:
         print(f"An error occurred: {e}")
+
+    #
+    # try:
+    #     with User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=False) as i:
+    #         path = '/a'
+    #         data = i.getSingleUserInformation('Test')
+    #         # print(data)
+    #
+    #         print(data)
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")

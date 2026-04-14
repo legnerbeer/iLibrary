@@ -78,11 +78,11 @@ class saveLibrary:
                         local_dir.mkdir(parents=True, exist_ok=True)
                         destination_local_path = str(local_dir / f"{saveFileName.upper()}.savf")
 
-                        # Normalize remote IFS path (Ensure remPath is provided if getZip is True)
+                        # Normalize remote ifs path (Ensure remPath is provided if getZip is True)
                         rem_dir = remPath.rstrip('/') if remPath else '/tmp'
                         remote_temp_savf_path = f"{rem_dir}/{saveFileName.upper()}.savf"
 
-                        # Copy from Library (*FILE) to IFS (*STMF)
+                        # Copy from Library (*FILE) to ifs (*STMF)
                         copy_cmd = (
                             f"CPYTOSTMF FROMMBR('/QSYS.LIB/{toLibrary.upper().strip()}.LIB/{saveFileName.upper().strip()}.FILE') "
                             f"TOSTMF('{remote_temp_savf_path}') STMFOPT(*REPLACE)"
@@ -92,7 +92,7 @@ class saveLibrary:
                         # Perform SFTP transfer
                         if self.__getSavFile(localFilePath=destination_local_path, remotePath=remote_temp_savf_path,
                                              port=port):
-                            # Clean up the temporary IFS file
+                            # Clean up the temporary ifs file
                             rmv_ifs_cmd = f"QSH CMD('rm -f {remote_temp_savf_path}')"
                             cursor.execute("CALL QSYS2.QCMDEXC(?)", (rmv_ifs_cmd,))
                             success_msg = f"Success: Downloaded to {destination_local_path}"
