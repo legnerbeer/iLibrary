@@ -15,3 +15,4 @@ DB_SYSTEM = os.environ.get("DB_SYSTEM")
 
 
 if __name__ == "__main__":
+    print('Nothing to do')
