@@ -12,14 +12,12 @@ DB_USER = os.environ.get("DB_USER")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 DB_SYSTEM = os.environ.get("DB_SYSTEM")
 
-if __name__ == "__main__":
-
 # ----------------------------------------------------
 # Get all Users information from IBM i Server using
 # iLibrary
 # ----------------------------------------------------
 
-
+def getAllUsers():
 # Flag to enable/disable Mapepire connection mode
     USE_MAPEPIRE = False
 
@@ -43,11 +41,13 @@ if __name__ == "__main__":
         # Print the error message for debugging
         print(e)
 
+
+
 # ----------------------------------------------------
 # Get single Users information from IBM i Server
 # using iLibrary
 # ----------------------------------------------------
-
+def getSingleUser():
     # Flag to enable/disable Mapepire connection mode
     USE_MAPEPIRE = False
 
@@ -77,6 +77,43 @@ if __name__ == "__main__":
         # Output the error message for debugging purposes
         print(e)
 
+# ----------------------------------------------------
+# Send a message to a IBM i User using iLibrary
+# ----------------------------------------------------
+def sendMessage():
+        # Flag to enable/disable Mapepire connection mode
+        USE_MAPEPIRE = False
 
-#TODO ---------------------------------------------
-#TODO Write the SendMessage Function to here
+        # Username to search for in the IBM i system
+        USERNAME_TO_SEARCH = '<USERNAME>'
+        MESSAGE_TO_SEND = 'From iLibrary'
+
+        try:
+            # Establish a connection to the IBM i system using the User class
+            # The context manager ensures proper connection handling (open/close)
+            with User(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=USE_MAPEPIRE) as u:
+
+                # Retrieve detailed information for a single user
+                # - username: the user profile to look up
+                # Returns data as a JSON string
+                raw_result = u.send_message_to_user(
+                    username=USERNAME_TO_SEARCH,
+                    message=MESSAGE_TO_SEND,
+                )
+
+                # Convert the JSON string into a Python object (dict or list)
+                data = json.loads(raw_result)
+
+                # Pretty-print the result for better readability
+                print(json.dumps(data, indent=4))
+
+        # Handle any exceptions that occur during execution
+        except Exception as e:
+            # Output the error message for debugging purposes
+            print(e)
+
+
+if __name__ == "__main__":
+    getAllUsers()
+    getSingleUser()
+    sendMessage()

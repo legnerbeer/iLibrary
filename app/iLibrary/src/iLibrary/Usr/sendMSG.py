@@ -22,7 +22,7 @@ class sendMSG():
             # msgtype: str = None,
             # rpymsgq: str = None,
             ccsid: int = None
-    ):
+    ) -> dict[str, str]:
         """
         Sends a message to a specified user on the system. This method interacts with the system
         to send a message by executing an SQL query. It validates the required
