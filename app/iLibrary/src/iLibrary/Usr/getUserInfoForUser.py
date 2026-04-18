@@ -1,11 +1,10 @@
-from os.path import join
-import paramiko
 import pyodbc
-import json
-from datetime import datetime, date
-from decimal import Decimal
+from ..util_functions.helper import create_success_envelope, create_error_envelope
 
 class getUserInfoForUser():
+    def __init__(self, connection, mapepire=False):
+        self.conn = connection
+        self.mapepire = mapepire
     """
     Handles user information retrieval and messaging functionalities.
 
@@ -16,7 +15,7 @@ class getUserInfoForUser():
     :ivar conn: Database connection object used for executing queries.
     :type conn: Any
     """
-    def getAllUsers(self, wantJson: bool = False):
+    def getAllUsers(self) -> dict[str, str]:
         """
         Retrieves all user information from the database. Optionally returns the data in
         JSON format depending on the provided parameter.
@@ -33,35 +32,31 @@ class getUserInfoForUser():
         """
         sql_query = "SELECT * FROM qsys2.user_info"
 
-        def json_serial(obj):
-            if hasattr(obj, 'isoformat'):
-                return obj.isoformat()
-            return str(obj)
 
         try:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_query)
                 rows = cursor.fetchall()
-
+                if self.mapepire:
+                    data = rows.get('data', []) if isinstance(rows, dict) else rows
+                    return create_success_envelope(data)
                 if not rows:
-                    error_msg = {'error': 'No data found'}
-                    return json.dumps(error_msg, indent=4) if wantJson else [("error", "No data found")]
+                    error_msg = f"No User found"
+                    return create_error_envelope(error_msg, func_name="getAllUsers")
 
                 # Get column names
                 columns = [column[0] for column in cursor.description]
 
-                if wantJson:
-                    # Create a LIST of dictionaries
-                    results = [dict(zip(columns, r)) for r in rows]
-                    return json.dumps(results, indent=4, default=json_serial)
 
-                return rows  # Returns the list of tuples
+                results = [dict(zip(columns, r)) for r in rows]
+                return create_success_envelope(results)
+
+
 
         except Exception as e:
-            print(f"An error occurred: {e}")
-            return None
+            return create_error_envelope(error_msg=str(e), func_name="getAllUsers")
 
-    def getSingleUserInformation(self, username: str, wantJson: bool = False):
+    def getSingleUserInformation(self, username: str) -> dict[str, str]:
         """
         Retrieves information about a specific user from the database based on their username. The function supports
         returning data either as a JSON-formatted string or as a tuple with corresponding database fields.
@@ -90,20 +85,23 @@ class getUserInfoForUser():
         try:
             with self.conn.cursor() as cursor:
                 cursor.execute(sql_query)
-                row = cursor.fetchone()  # Since you only expect one user
-
-                if not row:
-                    error_msg = {'error': 'No data found for User: ' + username}
-                    return json.dumps(error_msg, indent=4) if wantJson else ("error", error_msg['error'])
+                row = cursor.fetchone()
+                if self.mapepire:
+                    #check if row empty or not
+                    if not row['data']:
+                        error_msg = 'No data found for User: ' + username
+                        return create_error_envelope(error_msg, func_name="getSingleUserInformation")
+                    return create_success_envelope(row['data'])
+                if not row :
+                    error_msg = 'No data found for User: ' + username
+                    return create_error_envelope(error_msg, func_name="getSingleUserInformation")
 
                 # DYNAMICALLY get column names from the database itself
                 columns = [column[0] for column in cursor.description]
                 row_dict = dict(zip(columns, row))
 
-                if wantJson:
-                    return json.dumps(row_dict, indent=4, default=json_serial)
-                return row  # Returns the tuple
+                return create_success_envelope(row_dict)
 
         except Exception as e:
             print(f"An error occurred: {e}")
-            return None
+            return create_error_envelope(error_msg=str(e), func_name="getSingleUserInformation")

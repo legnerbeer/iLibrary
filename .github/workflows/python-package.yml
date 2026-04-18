@@ -2,9 +2,9 @@ name: iLibrary
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "**" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "**" ]
 
 jobs:
   build:
@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python-version: ["3.12", "3.13", "3.14"]
 
     # 1. Inject SECRETS as Environment Variables for the entire job
     env:
@@ -52,6 +52,7 @@ jobs:
         python -m pip install --upgrade pip
         # pyodbc is needed for the IBM i connection
         python -m pip install -r requirements.txt
+        python -m pip install -e .
         python -m pip install flake8 pytest # Ensure testing/linting tools are installed
 
     - name: Lint with flake8

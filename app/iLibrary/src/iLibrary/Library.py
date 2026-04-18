@@ -1,11 +1,7 @@
-from os.path import join
-import paramiko
+from mapepire_python import connect
 import pyodbc
-import json
-from datetime import datetime, date
-from decimal import Decimal
-from .getInfoForLibrary import *
-from .saveLibrary import *
+from .Libr.getInfoForLibrary import *
+from .Libr.saveLibrary import *
 
 
 
@@ -20,7 +16,7 @@ class Library(getInfoForLibrary, saveLibrary):
     # ------------------------------------------------------
     # __init__ - initzialise the class
     # ------------------------------------------------------
-    def __init__(self, db_user: str, db_password: str, db_host: str, db_driver: str):
+    def __init__(self, db_user: str, db_password: str, db_host: str, db_driver: str, mapepire: bool = False):
         """
         Initializes the class attributes for a database connection.
         The actual connection is established in the __enter__ method.
@@ -35,6 +31,7 @@ class Library(getInfoForLibrary, saveLibrary):
         self.db_host = db_host
         self.db_driver = db_driver
         self.db_password = db_password
+        self.mapepire = mapepire
 
     # ------------------------------------------------------
     # __enter__ - enter to the class
@@ -44,17 +41,33 @@ class Library(getInfoForLibrary, saveLibrary):
         Establishes the database connection when entering a 'with' block.
         """
         try:
-            conn_str = (
-                f"DRIVER={self.db_driver};"
-                f"SYSTEM={self.db_host};"
-                f"UID={self.db_user};"
-                f"PWD={self.db_password};"
-            )
-            self.conn = pyodbc.connect(conn_str, autocommit=True)
+            if not self.mapepire:
+                conn_str = (
+                    f"DRIVER={self.db_driver};"
+                    f"SYSTEM={self.db_host};"
+                    f"UID={self.db_user};"
+                    f"PWD={self.db_password};"
+                )
+                self.conn = pyodbc.connect(conn_str, autocommit=True)
+
+            else:
+                conn_str = {
+                      "host": self.db_host,
+                      "port": 8076,
+                      "user": self.db_user,
+                      "password": self.db_password,
+                    }
+                self.conn = connect(conn_str)
+            super().__init__(self.conn, mapepire=self.mapepire)
             return self
+
         except pyodbc.Error as ex:
             sqlstate = ex.args[0]
             print(f"Database connection failed with error: {sqlstate}")
+            raise
+        except Exception as e:
+
+            print(f"Database connection failed with error: {e}")
             raise
 
     # ------------------------------------------------------
@@ -72,9 +85,14 @@ class Library(getInfoForLibrary, saveLibrary):
     # iClose - close connection
     # ------------------------------------------------------
     def iclose(self):
-        """
-        A helper method to close the connection, also useful for manual closure.
-        """
-        if self.conn and not self.conn.closed:
+        if not self.conn:
+            return
+
+        try:
+            # Both pyodbc and mapepire-python support .close()
+            # but mapepire MUST have it called to kill background threads
             self.conn.close()
+        except Exception:
             pass
+        finally:
+            self.conn = None

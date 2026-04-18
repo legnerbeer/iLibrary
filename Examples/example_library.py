@@ -1,32 +1,3 @@
-# iLibrary
-
-A lightweight Python helper for working with IBM i (AS/400) libraries. It connects via ODBC (pyodbc) for DB2/SQL queries and uses Paramiko for SSH/SFTP to save and transfer library save files (SAVF).
-
-[![PyPI Downloads](https://static.pepy.tech/personalized-badge/ilibrary?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=MAGENTA&left_text=downloads)](https://pepy.tech/projects/ilibrary)
-
-Overview
-- Query library metadata using QSYS2 services
-- List objects in a library (and optionally source physical files)
-- Create a save file (SAVF) for a library via SAVLIB and optionally download it
-- Remove save files
-- Simple context manager to handle DB connection lifecycle
-
-Requirements
-- Python 3.8+
-- IBM i system access
-- IBM i Access ODBC Driver (or compatible) installed locally
-- Network access to the IBM i for ODBC and SSH/SFTP
-
-Installation
-- From PyPI: `pip install iLibrary`
-- From source:
-  - Clone the repo
-  - Optionally create and activate a virtual environment
-  - pip install -r requirements.txt
-  - pip install -e .
-
-Quickstart
-```python
 import json
 from os.path import join
 import os
@@ -151,23 +122,3 @@ if __name__ == '__main__':
     getSaveFile()
     getAllLibraries()
     getSingleLibraryInfo()
-```
-
-
-More Examples:
-- [Go to the Folder Examples](/Examples/Readme.md)
-
-
-Configuration
-- Environment variables expected:
-  - DB_DRIVER: e.g. {IBM i Access ODBC Driver}
-  - DB_USER
-  - DB_PASSWORD
-  - DB_SYSTEM
-
-Contributing
-- Please run tests or the sample script before submitting changes.
-
-License
-- See the repository license file if present.
-  
