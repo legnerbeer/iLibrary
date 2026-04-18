@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from iLibrary import User
 
 #load ENV file and get the Connection Settings
-dotenv_path = join('..', '.env')
+dotenv_path = join('.env')
 load_dotenv(dotenv_path)
 DB_DRIVER = os.environ.get("DB_DRIVER")
 DB_USER = os.environ.get("DB_USER")
