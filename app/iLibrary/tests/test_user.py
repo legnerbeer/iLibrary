@@ -55,15 +55,15 @@ def test_get_single_user_info_mapepire(mock_user_context):
         data = lib.getSingleUserInformation(username=TEST_USER)
 
     # --- Assertions ---
-    # 1. Assert constructor received the correct arguments
+
     mock_user_class.assert_called_once_with(
         DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=True
     )
 
-    # 2. Assert the method was called with the correct username
+
     user_instance.getSingleUserInformation.assert_called_once_with(username=TEST_USER)
 
-    # 3. Assert the data returned matches the input (ALBEER == ALBEER)
+
     assert data["USERNAME"] == TEST_USER
 
 

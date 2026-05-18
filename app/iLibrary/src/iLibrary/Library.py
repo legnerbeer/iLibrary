@@ -5,7 +5,7 @@ from .Libr.saveLibrary import *
 
 
 
-class Library(getInfoForLibrary, saveLibrary):
+class Library(GetInfoForLibrary, SaveLibrary):
     """
     A class to manage libraries and files on an IBM i system.
 

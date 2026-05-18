@@ -1,14 +1,11 @@
 from mapepire_python import connect
+import pyodbc
+from .System.getWrkactjob import *
 
-from .Usr.getUserInfoForUser import *
-from .Usr.sendMSG import *
-
-class User(GetUserInfoForUser, sendMSG):
+class System(GetWrkActJob):
     """
-        A class to manage User on IBMi System
+    A class to manage the System on an IBM i system.
 
-        It provides methods to connect to the system via pyodbc for SQL and
-        paramiko for SFTP transfers.
     """
 
     # ------------------------------------------------------
@@ -34,7 +31,7 @@ class User(GetUserInfoForUser, sendMSG):
     # ------------------------------------------------------
     # __enter__ - enter to the class
     # ------------------------------------------------------
-    def __enter__(self) -> 'User':
+    def __enter__(self) -> 'System':
         """
         Establishes the database connection when entering a 'with' block.
         """
@@ -50,11 +47,11 @@ class User(GetUserInfoForUser, sendMSG):
 
             else:
                 conn_str = {
-                    "host": self.db_host,
-                    "port": 8076,
-                    "user": self.db_user,
-                    "password": self.db_password,
-                }
+                      "host": self.db_host,
+                      "port": 8076,
+                      "user": self.db_user,
+                      "password": self.db_password,
+                    }
                 self.conn = connect(conn_str)
             super().__init__(self.conn, mapepire=self.mapepire)
             return self
@@ -77,6 +74,7 @@ class User(GetUserInfoForUser, sendMSG):
         This method is called automatically, even if an error occurred.
         """
         self.iclose()
+
 
     # ------------------------------------------------------
     # iClose - close connection
