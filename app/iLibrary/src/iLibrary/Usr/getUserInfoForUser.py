@@ -1,7 +1,7 @@
 import pyodbc
 from ..util_functions.helper import create_success_envelope, create_error_envelope
 
-class getUserInfoForUser():
+class GetUserInfoForUser():
     def __init__(self, connection, mapepire=False):
         self.conn = connection
         self.mapepire = mapepire

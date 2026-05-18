@@ -2,7 +2,7 @@ from ..util_functions.helper import create_success_envelope, create_error_envelo
 
 
 
-class getInfoForLibrary:
+class GetInfoForLibrary:
     def __init__(self, connection, mapepire=False):
         self.conn = connection
         self.mapepire = mapepire

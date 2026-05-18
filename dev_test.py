@@ -2,7 +2,7 @@ import json
 from os.path import join, dirname
 import os
 from dotenv import load_dotenv
-from iLibrary import Library, User, IFS
+from iLibrary import Library, User, IFS, System
 from os.path import dirname
 
 #load ENV file and get the Connection Settings
@@ -13,41 +13,31 @@ DB_USER = os.environ.get("DB_USER")
 DB_PASSWORD = os.environ.get("DB_PASSWORD")
 DB_SYSTEM = os.environ.get("DB_SYSTEM")
 
-
-if __name__ == "__main__":
-
-    # Path in the IBM i Integrated File System (IFS) to read
-    REMOTE_PATH_TO_READ: str = '/home/ALBEER'
-
-    # If True, reads all subdirectories recursively
-    # If False, reads only the specified directory
-    SUBTREE: bool = False
-
-    # Flag to enable/disable Mapepire connection mode
-    USE_MAPEPIRE: bool = False
+def getSingleLibraryInfo():
+    USE_MAPEPIRE = False
 
     try:
-        # Try to establish a connection to the IBM i server
-        # The IFS class is used as a context manager to ensure proper cleanup
-        with IFS(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=USE_MAPEPIRE) as i:
+        # Establish a connection to the IBM i system using the User class
+        # The context manager ensures the connection is properly opened and closed
+        with System(DB_USER, DB_PASSWORD, DB_SYSTEM, DB_DRIVER, mapepire=USE_MAPEPIRE) as u:
 
-            # Call the readIFS method to retrieve file system data
-            # - path_to_read: directory path in the IFS
-            # - subtrees: whether to include subdirectories
-            raw_result = i.readIFS(
-                path_to_read=REMOTE_PATH_TO_READ,
-                subtrees=SUBTREE
-            )
+            # Call the method to retrieve all users from the system
+            # The result is returned as a JSON string
+            raw_result = u.get_active_jobs()
 
-            # Convert the returned JSON string into a Python object (dict/list)
+            # Parse the JSON string into a Python object (list/dictionary)
             data = json.loads(raw_result)
+            counter = data['metadata'].get('count')
 
-            # Pretty-print the JSON data with indentation for readability
-            print(json.dumps(data, indent=2))
-
-    # Catch and handle any errors that occur during execution
+            # Pretty-print the parsed data with indentation for readability
+            print(json.dumps(data, indent=4))
+            print(counter)
+    # Handle any exceptions that occur during connection or data retrieval
     except Exception as e:
-        # Print a simple error message for debugging purposes
-        print(f"An error occurred: {e}")
+        # Print the error message for debugging
+        print(e)
+
+if __name__ == "__main__":
+    getSingleLibraryInfo()
 
 

@@ -4,7 +4,7 @@ from pathlib import PureWindowsPath, Path
 from ..util_functions.helper import create_success_envelope, create_error_envelope
 
 
-class saveLibrary:
+class SaveLibrary:
     def __init__(self, connection, mapepire=False):
         """
         Initializes the saveLibrary parent class.
